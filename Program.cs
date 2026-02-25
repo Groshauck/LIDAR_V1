@@ -1,28 +1,16 @@
 using System;
-using System.IO;
-using System.Collections.Generic;
-using WinFormsApp1;
-
-
+using System.Windows.Forms;
+using WinFormsApp1.Forms;
 
 namespace WinFormsApp1
 {
     internal static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
-            Application.Run(new Courbe());
-
-
+            Application.Run(new ConfigurationForm()); // ✅ Démarrer sur ConfigurationForm
         }
     }
-
-   
 }
