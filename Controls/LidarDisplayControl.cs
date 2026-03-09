@@ -18,6 +18,7 @@ namespace WinFormsApp1.Controls
         private List<LidarPoint> points = new List<LidarPoint>();
         private Affichage settings;
         private volatile bool isActive = false;
+        private bool hasNewScan = false;
 
 
         // ========== VARIABLES POUR RECTANGLE DYNAMIQUE ==========
@@ -187,17 +188,28 @@ namespace WinFormsApp1.Controls
 
         private void OnNewScan(List<LidarPoint> newPoints)
         {
-            if (!this.IsHandleCreated) return;
-
-            BeginInvoke((Action)(() =>
-            {
-                points = newPoints;
-                if (isActive)
-                {
-                    PlotData();
-                }
-            }));
+            points = newPoints;
+            hasNewScan = true;
         }
+
+        public bool HasNewScan
+        {
+            get { return hasNewScan; }
+            set { hasNewScan = value; }
+        }
+        //private void OnNewScan(List<LidarPoint> newPoints)
+        //{
+        //    if (!this.IsHandleCreated) return;
+
+        //    BeginInvoke((Action)(() =>
+        //    {
+        //        points = newPoints;
+        //        if (isActive)
+        //        {
+        //            PlotData();
+        //        }
+        //    }));
+        //}
 
         public void StartDisplay()
         {
@@ -207,6 +219,11 @@ namespace WinFormsApp1.Controls
         public void StopDisplay()
         {
             isActive = false;
+        }
+
+        public void RefreshLidarView()
+        {
+            PlotData();
         }
 
         private void PlotData()

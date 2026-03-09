@@ -40,6 +40,18 @@
             this.ResumeLayout(false);
         }
 
+        private void RefreshTimer_Tick(object sender, EventArgs e)
+        {
+            foreach (var lidarControl in lidarControls)
+            {
+                if (lidarControl.HasNewScan)
+                {
+                    lidarControl.RefreshLidarView();
+                    lidarControl.HasNewScan = false;
+                }
+            }
+        }
+
         #endregion
     }
 }
