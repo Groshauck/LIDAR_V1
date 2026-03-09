@@ -15,6 +15,7 @@ namespace WinFormsApp1
 
         // 8 contrôles LIDAR
         private List<LidarDisplayControl> lidarControls = new List<LidarDisplayControl>();
+        private System.Windows.Forms.Timer refreshTimer;
 
         // ✅ CHANGEZ CES IP POUR VOS VRAIS LIDAR
         private readonly (string ip, int port)[] lidarConfigs =
@@ -33,28 +34,34 @@ namespace WinFormsApp1
         private Button btnPlayStop;
         private bool isRunning = false;
 
+        //public Courbe()
+        //{
+        //    InitializeComponent();
+        //    this.Load += Courbe_Load;
+
+        //}
+
+        //private void Courbe_Load(object sender, EventArgs e)
+        //{
+        //    // Charger les paramètres
+        //    settings = AffichageSettingsManager.Charger();
 
 
+        //    // Créer l'interface avec 8 LIDAR
+        //    CreateLidarGrid();
+        //}
 
-        public Courbe()
+
+        private void RefreshTimer_Tick(object sender, EventArgs e)
         {
-            InitializeComponent();
-
-            this.Load += Courbe_Load;
-
-        }
-
-       
-
-
-        private void Courbe_Load(object sender, EventArgs e)
-        {
-            // Charger les paramètres
-            settings = AffichageSettingsManager.Charger();
-
-
-            // Créer l'interface avec 8 LIDAR
-            CreateLidarGrid();
+            foreach (var lidarControl in lidarControls)
+            {
+                if (lidarControl.HasNewScan)
+                {
+                    lidarControl.RefreshLidarView();
+                    lidarControl.HasNewScan = false;
+                }
+            }
         }
 
         private void CreateLidarGrid()
