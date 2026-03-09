@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using WinFormsApp1.Constants;
 using WinFormsApp1.Models;
 
@@ -23,22 +22,15 @@ namespace WinFormsApp1.Services
         public double SignalStrengthXPlage { get; set; }
         public bool CheckBoxSignalStrengthCoeff { get; set; }
 
-        // ✅ Intervalle d'affichage configurable (par défaut 1 seconde)
-        public int DisplayIntervalMs { get; set; } = 1000;
-
         private volatile bool isRunning = false;
 
         private List<LidarPoint> currentScan = new List<LidarPoint>();
-        private List<LidarPoint> lastCompletedScan = null; // ✅ Dernier scan complet bufferisé
         private double previousAngle = -1;
         private bool firstPacket = true;
 
         private readonly object lockObject = new object();
-        private readonly object scanLock = new object(); // ✅ Verrou dédié au scan bufferisé
         private readonly string ipAddress;
         private readonly int udpPort;
-
-        private System.Threading.Timer displayTimer; // ✅ Timer de cadence
 
         public LidarUdpReceiver(string ip, int port = 2368)
         {
@@ -54,9 +46,6 @@ namespace WinFormsApp1.Services
 
                 isRunning = true;
 
-                // ✅ Démarrage du timer de cadence
-                displayTimer = new System.Threading.Timer(OnDisplayTick, null, DisplayIntervalMs, DisplayIntervalMs);
-
                 LidarUdpManager.Instance.RegisterLidar(ipAddress, OnDataReceived);
                 LidarUdpManager.Instance.Start();
             }
@@ -67,32 +56,8 @@ namespace WinFormsApp1.Services
             lock (lockObject)
             {
                 isRunning = false;
-                firstPacket = true;
-                previousAngle = -1;
-                currentScan.Clear();
-
-                // ✅ Arrêt propre du timer
-                displayTimer?.Dispose();
-                displayTimer = null;
-
                 LidarUdpManager.Instance.UnregisterLidar(ipAddress);
             }
-        }
-
-        // ✅ Appelé toutes les X ms par le timer → envoie le dernier scan bufferisé
-        private void OnDisplayTick(object state)
-        {
-            if (!isRunning) return;
-
-            List<LidarPoint> scanToDisplay;
-
-            lock (scanLock)
-            {
-                if (lastCompletedScan == null || lastCompletedScan.Count == 0) return;
-                scanToDisplay = new List<LidarPoint>(lastCompletedScan);
-            }
-
-            OnNewScan?.Invoke(scanToDisplay);
         }
 
         private void OnDataReceived(List<LidarPoint> points)
@@ -139,33 +104,26 @@ namespace WinFormsApp1.Services
 
         private void AccumulatePoints(List<LidarPoint> points)
         {
-            lock (lockObject) // ✅ Protection thread-safety
+            foreach (var point in points)
             {
-                foreach (var point in points)
+                if (firstPacket)
                 {
-                    if (firstPacket)
-                    {
-                        previousAngle = point.Angle;
-                        firstPacket = false;
-                    }
-
-                    if (!firstPacket && point.Angle < previousAngle)
-                    {
-                        if (currentScan.Count > 50)
-                        {
-                            // ✅ On bufferise le scan au lieu de l'envoyer directement
-                            lock (scanLock)
-                            {
-                                lastCompletedScan = new List<LidarPoint>(currentScan);
-                            }
-                        }
-
-                        currentScan.Clear();
-                    }
-
-                    currentScan.Add(point);
                     previousAngle = point.Angle;
+                    firstPacket = false;
                 }
+
+                if (!firstPacket && point.Angle < previousAngle)
+                {
+                    if (currentScan.Count > 50)
+                    {
+                        OnNewScan?.Invoke(new List<LidarPoint>(currentScan));
+                    }
+
+                    currentScan.Clear();
+                }
+
+                currentScan.Add(point);
+                previousAngle = point.Angle;
             }
         }
     }
