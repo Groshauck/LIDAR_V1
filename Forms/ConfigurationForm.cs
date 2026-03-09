@@ -134,6 +134,20 @@ namespace WinFormsApp1.Forms
         private Panel panelLeft;
         private Panel panelRight;
 
+        // ========== TEST 30 SECONDES ==========
+        private System.Windows.Forms.Timer testTimer;
+        private int testSecondesRestantes = 0;
+        private int testNormalCount = 0;
+        private int testDeboiteCount = 0;
+        private bool testEnCours = false;
+        private bool _dernierEtatTest = true;
+
+        // Contrôles UI pour le test
+        private Button btnTest30s;
+        private System.Windows.Forms.Label lblTestCountdown;
+        private System.Windows.Forms.Label lblTestNormal;
+        private System.Windows.Forms.Label lblTestDeboite;
+
         public ConfigurationForm()
         {
             InitializeComponent();
@@ -241,6 +255,60 @@ namespace WinFormsApp1.Forms
             btnPlayStop.FlatAppearance.BorderSize = 0;
             btnPlayStop.Click += BtnPlayStop_Click;
             panelTop.Controls.Add(btnPlayStop);
+
+            // Bouton Test 30s
+            btnTest30s = new Button
+            {
+                Text = "🧪 Test 30s",
+                Location = new Point(820, 18),
+                Size = new Size(130, 35),
+                Font = new Font("Segoe UI", 10, System.Drawing.FontStyle.Bold),
+                BackColor = System.Drawing.Color.DarkCyan,
+                ForeColor = System.Drawing.Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            btnTest30s.FlatAppearance.BorderSize = 0;
+            btnTest30s.Click += BtnTest30s_Click;
+            panelTop.Controls.Add(btnTest30s);
+
+            // Label compte à rebours
+            lblTestCountdown = new System.Windows.Forms.Label
+            {
+                Text = "",
+                Location = new Point(960, 10),
+                Size = new Size(80, 40),
+                Font = new Font("Segoe UI", 11, System.Drawing.FontStyle.Bold),
+                ForeColor = System.Drawing.Color.Yellow,
+                BackColor = System.Drawing.Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            panelTop.Controls.Add(lblTestCountdown);
+
+            // Label caisses normales
+            lblTestNormal = new System.Windows.Forms.Label
+            {
+                Text = "✅ 0",
+                Location = new Point(1050, 10),
+                Size = new Size(80, 40),
+                Font = new Font("Segoe UI", 11, System.Drawing.FontStyle.Bold),
+                ForeColor = System.Drawing.Color.LimeGreen,
+                BackColor = System.Drawing.Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            panelTop.Controls.Add(lblTestNormal);
+
+            // Label caisses déboîtées
+            lblTestDeboite = new System.Windows.Forms.Label
+            {
+                Text = "❌ 0",
+                Location = new Point(1140, 10),
+                Size = new Size(80, 40),
+                Font = new Font("Segoe UI", 11, System.Drawing.FontStyle.Bold),
+                ForeColor = System.Drawing.Color.OrangeRed,
+                BackColor = System.Drawing.Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            panelTop.Controls.Add(lblTestDeboite);
 
             this.Controls.Add(panelTop);
 
@@ -1136,6 +1204,25 @@ namespace WinFormsApp1.Forms
                     lblEtatCaisse.Text = $"❌ NOK (P1:{nbPointsPlastique}/P2:{nbPointsPlastique2}/P3:{nbPointsPlastique3})";
                     lblEtatCaisse.ForeColor = System.Drawing.Color.Red;
                 }
+
+                // ========== COMPTAGE TEST 30S ==========
+                if (testEnCours)
+                {
+                    if (toutOK != _dernierEtatTest)
+                    {
+                        _dernierEtatTest = toutOK;
+                        if (toutOK)
+                        {
+                            testNormalCount++;
+                            lblTestNormal.Text = $"✅ {testNormalCount}";
+                        }
+                        else
+                        {
+                            testDeboiteCount++;
+                            lblTestDeboite.Text = $"❌ {testDeboiteCount}";
+                        }
+                    }
+                }
             }
 
             var rectIA = plotPreview.Plot.Add.Rectangle(
@@ -1287,6 +1374,72 @@ namespace WinFormsApp1.Forms
             this.Hide();
             dashboardForm.ShowDialog();
             this.Show();
+        }
+
+        private void BtnTest30s_Click(object sender, EventArgs e)
+        {
+            if (testEnCours)
+            {
+                StopTest();
+                return;
+            }
+
+            if (!isLive)
+            {
+                MessageBox.Show("Démarrez le LIDAR avant de lancer le test !", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            testNormalCount = 0;
+            testDeboiteCount = 0;
+            testSecondesRestantes = 30;
+            testEnCours = true;
+            _dernierEtatTest = caisseOK && plastique2OK && plastique3OK;
+
+            lblTestNormal.Text = "✅ 0";
+            lblTestDeboite.Text = "❌ 0";
+            lblTestCountdown.Text = "30s";
+            btnTest30s.Text = "⏹ Stop Test";
+            btnTest30s.BackColor = System.Drawing.Color.DarkRed;
+
+            testTimer?.Stop();
+            testTimer?.Dispose();
+            testTimer = new System.Windows.Forms.Timer();
+            testTimer.Interval = 1000;
+            testTimer.Tick += TestTimer_Tick;
+            testTimer.Start();
+        }
+
+        private void TestTimer_Tick(object sender, EventArgs e)
+        {
+            testSecondesRestantes--;
+            lblTestCountdown.Text = $"{testSecondesRestantes}s";
+
+            if (testSecondesRestantes <= 0)
+            {
+                StopTest();
+                MessageBox.Show(
+                    $"🧪 Test terminé !\n\n" +
+                    $"✅ Normal   : {testNormalCount}\n" +
+                    $"❌ Déboîté : {testDeboiteCount}\n\n" +
+                    $"Total : {testNormalCount + testDeboiteCount} caisses détectées",
+                    "Résultat du test",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            }
+        }
+
+        private void StopTest()
+        {
+            testEnCours = false;
+            testTimer?.Stop();
+            testTimer?.Dispose();
+            testTimer = null;
+
+            lblTestCountdown.Text = "";
+            btnTest30s.Text = "🧪 Test 30s";
+            btnTest30s.BackColor = System.Drawing.Color.DarkCyan;
         }
 
         private void BtnBrowseExport_Click(object sender, EventArgs e)
