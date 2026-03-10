@@ -1412,7 +1412,7 @@ namespace WinFormsApp1.Forms
             int restantes = Math.Max(0, testDureeTotaleSecondes - (int)elapsed);
             lblTestCountdown.Text = $"{restantes}s";
 
-            if (testSecondesRestantes <= 0)
+            if (restantes <= 0)
             {
                 StopTest();
                 MessageBox.Show(
