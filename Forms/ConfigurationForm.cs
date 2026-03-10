@@ -1205,24 +1205,24 @@ namespace WinFormsApp1.Forms
                     lblEtatCaisse.ForeColor = System.Drawing.Color.Red;
                 }
 
-                // ========== COMPTAGE TEST 30S ==========
-                if (testEnCours)
-                {
-                    if (toutOK != _dernierEtatTest)
-                    {
-                        _dernierEtatTest = toutOK;
-                        if (toutOK)
-                        {
-                            testNormalCount++;
-                            lblTestNormal.Text = $"✅ {testNormalCount}";
-                        }
-                        else
-                        {
-                            testDeboiteCount++;
-                            lblTestDeboite.Text = $"❌ {testDeboiteCount}";
-                        }
-                    }
-                }
+                //// ========== COMPTAGE TEST 30S ==========
+                //if (testEnCours)
+                //{
+                //    if (toutOK != _dernierEtatTest)
+                //    {
+                //        _dernierEtatTest = toutOK;
+                //        if (toutOK)
+                //        {
+                //            testNormalCount++;
+                //            lblTestNormal.Text = $"✅ {testNormalCount}";
+                //        }
+                //        else
+                //        {
+                //            testDeboiteCount++;
+                //            lblTestDeboite.Text = $"❌ {testDeboiteCount}";
+                //        }
+                //    }
+                //}
             }
 
             var rectIA = plotPreview.Plot.Add.Rectangle(
@@ -1415,6 +1415,19 @@ namespace WinFormsApp1.Forms
             testSecondesRestantes--;
             lblTestCountdown.Text = $"{testSecondesRestantes}s";
 
+            // ========== COMPTAGE À CHAQUE SECONDE ==========
+            bool toutOK = caisseOK && plastique2OK && plastique3OK;
+            if (toutOK)
+            {
+                testNormalCount++;
+                lblTestNormal.Text = $"✅ {testNormalCount}";
+            }
+            else
+            {
+                testDeboiteCount++;
+                lblTestDeboite.Text = $"❌ {testDeboiteCount}";
+            }
+
             if (testSecondesRestantes <= 0)
             {
                 StopTest();
@@ -1422,7 +1435,7 @@ namespace WinFormsApp1.Forms
                     $"🧪 Test terminé !\n\n" +
                     $"✅ Normal   : {testNormalCount}\n" +
                     $"❌ Déboîté : {testDeboiteCount}\n\n" +
-                    $"Total : {testNormalCount + testDeboiteCount} caisses détectées",
+                    $"Total : {testNormalCount + testDeboiteCount} secondes analysées",
                     "Résultat du test",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
