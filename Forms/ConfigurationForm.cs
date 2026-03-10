@@ -136,11 +136,11 @@ namespace WinFormsApp1.Forms
 
         // ========== TEST 30 SECONDES ==========
         private System.Windows.Forms.Timer testTimer;
-        private int testSecondesRestantes = 0;
+        private DateTime testStartTime = DateTime.MinValue;
+        private int testDureeTotaleSecondes = 30;
         private int testNormalCount = 0;
         private int testDeboiteCount = 0;
         private bool testEnCours = false;
-        private bool _dernierEtatTest = true;
 
         // Contrôles UI pour le test
         private Button btnTest30s;
@@ -1205,22 +1205,18 @@ namespace WinFormsApp1.Forms
                     lblEtatCaisse.ForeColor = System.Drawing.Color.Red;
                 }
 
-                // ========== COMPTAGE TEST 30S ==========
+                // ========== COMPTAGE TEST (cadence = rafraîchissement LIDAR) ==========
                 if (testEnCours)
                 {
-                    if (toutOK != _dernierEtatTest)
+                    if (toutOK)
                     {
-                        _dernierEtatTest = toutOK;
-                        if (toutOK)
-                        {
-                            testNormalCount++;
-                            lblTestNormal.Text = $"✅ {testNormalCount}";
-                        }
-                        else
-                        {
-                            testDeboiteCount++;
-                            lblTestDeboite.Text = $"❌ {testDeboiteCount}";
-                        }
+                        testNormalCount++;
+                        lblTestNormal.Text = $"✅ {testNormalCount}";
+                    }
+                    else
+                    {
+                        testDeboiteCount++;
+                        lblTestDeboite.Text = $"❌ {testDeboiteCount}";
                     }
                 }
             }
@@ -1392,9 +1388,8 @@ namespace WinFormsApp1.Forms
 
             testNormalCount = 0;
             testDeboiteCount = 0;
-            testSecondesRestantes = 30;
+            testStartTime = DateTime.Now;
             testEnCours = true;
-            _dernierEtatTest = caisseOK && plastique2OK && plastique3OK;
 
             lblTestNormal.Text = "✅ 0";
             lblTestDeboite.Text = "❌ 0";
@@ -1412,17 +1407,19 @@ namespace WinFormsApp1.Forms
 
         private void TestTimer_Tick(object sender, EventArgs e)
         {
-            testSecondesRestantes--;
-            lblTestCountdown.Text = $"{testSecondesRestantes}s";
+            DateTime now = DateTime.Now;
+            double elapsed = (now - testStartTime).TotalSeconds;
+            int restantes = Math.Max(0, testDureeTotaleSecondes - (int)elapsed);
+            lblTestCountdown.Text = $"{restantes}s";
 
-            if (testSecondesRestantes <= 0)
+            if (elapsed >= testDureeTotaleSecondes)
             {
                 StopTest();
                 MessageBox.Show(
                     $"🧪 Test terminé !\n\n" +
                     $"✅ Normal   : {testNormalCount}\n" +
                     $"❌ Déboîté : {testDeboiteCount}\n\n" +
-                    $"Total : {testNormalCount + testDeboiteCount} caisses détectées",
+                    $"Total : {testNormalCount + testDeboiteCount} scans analysés",
                     "Résultat du test",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
