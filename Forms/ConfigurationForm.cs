@@ -159,10 +159,10 @@ namespace WinFormsApp1.Forms
             InitializeUI();
             LoadLidarConfig(1);
 
-            refreshLidarTimer = new System.Windows.Forms.Timer();
-            refreshLidarTimer.Interval = 10000; // 1000 ms = 1 seconde
-            refreshLidarTimer.Tick += RefreshLidarTimer_Tick;
-            refreshLidarTimer.Start();
+            //refreshLidarTimer = new System.Windows.Forms.Timer();
+            //refreshLidarTimer.Interval = 10000; // 1000 ms = 1 seconde
+            //refreshLidarTimer.Tick += RefreshLidarTimer_Tick;
+            //refreshLidarTimer.Start();
         }
 
         private void RefreshLidarTimer_Tick(object sender, EventArgs e)
