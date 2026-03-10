@@ -40,11 +40,7 @@
             this.ResumeLayout(false);
         }
 
-<<<<<<< HEAD
-        
 
-=======
->>>>>>> parent of f48e9d8 (z)
         #endregion
     }
 }
