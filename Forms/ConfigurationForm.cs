@@ -141,6 +141,7 @@ namespace WinFormsApp1.Forms
         private int testNormalCount = 0;
         private int testDeboiteCount = 0;
         private bool testEnCours = false;
+        private List<List<LidarPoint>> allScansTest = new List<List<LidarPoint>>();
 
         // Contrôles UI pour le test
         private Button btnTest30s;
@@ -973,6 +974,10 @@ namespace WinFormsApp1.Forms
             {
                 points = newPoints;
                 PlotPreview();
+                if (testEnCours)
+                {
+                    allScansTest.Add(new List<LidarPoint>(newPoints));
+                }
             }));
         }
 
@@ -1388,6 +1393,7 @@ namespace WinFormsApp1.Forms
 
             testNormalCount = 0;
             testDeboiteCount = 0;
+            allScansTest = new List<List<LidarPoint>>();
             testStartTime = DateTime.Now;
             testEnCours = true;
 
@@ -1415,15 +1421,8 @@ namespace WinFormsApp1.Forms
             if (restantes <= 0)
             {
                 StopTest();
-                MessageBox.Show(
-                    $"🧪 Test terminé !\n\n" +
-                    $"✅ Normal   : {testNormalCount}\n" +
-                    $"❌ Déboîté : {testDeboiteCount}\n\n" +
-                    $"Total : {testNormalCount + testDeboiteCount} caisses détectées",
-                    "Résultat du test",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                );
+                var resultForm = new TestResultForm(allScansTest, testDureeTotaleSecondes);
+                resultForm.Show();
             }
         }
 
