@@ -104,6 +104,13 @@ namespace WinFormsApp1.Controls
             this.Controls.Add(bottomPanel);
         }
 
+        public bool HasNewScan { get; set; } = false;
+
+        public void RefreshLidarView()
+        {
+            PlotData();
+        }
+
         /// <summary>
         /// Initialise le LIDAR avec un port UDP spécifique
         /// </summary>
