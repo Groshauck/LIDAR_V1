@@ -15,11 +15,13 @@ namespace WinFormsApp1.Forms
         private System.Windows.Forms.Label lblInfo;
         private readonly List<List<LidarPoint>> allScans;
         private readonly int testDurationSeconds;
+        private readonly double seuilEcartMm;
 
-        public TestResultForm(List<List<LidarPoint>> allScans, int testDurationSeconds = 30)
+        public TestResultForm(List<List<LidarPoint>> allScans, int testDurationSeconds = 30, double seuilEcartMm = 100.0)
         {
             this.allScans = allScans;
             this.testDurationSeconds = testDurationSeconds;
+            this.seuilEcartMm = seuilEcartMm;
             InitializeUI();
             PlotResults();
         }
@@ -71,6 +73,8 @@ namespace WinFormsApp1.Forms
             var ysMin = new List<double>();
             var xsMax = new List<double>();
             var ysMax = new List<double>();
+            var xsStable = new List<double>();
+            var ysStable = new List<double>();
 
             foreach (var group in groupedByAngle)
             {
@@ -81,6 +85,13 @@ namespace WinFormsApp1.Forms
                 ysMin.Add(ptMin.Y);
                 xsMax.Add(ptMax.X);
                 ysMax.Add(ptMax.Y);
+
+                double ecart = ptMax.Distance - ptMin.Distance;
+                if (ecart < seuilEcartMm)
+                {
+                    xsStable.Add((ptMin.X + ptMax.X) / 2.0);
+                    ysStable.Add((ptMin.Y + ptMax.Y) / 2.0);
+                }
             }
 
             // ========== COURBE VERTE : Distance minimale par angle ==========
@@ -97,6 +108,16 @@ namespace WinFormsApp1.Forms
             scatterMax.LineWidth = 0;
             scatterMax.LegendText = "Position à dist. max / angle";
 
+            // ========== COURBE NOIRE : Positions stables (écart < seuil) ==========
+            if (xsStable.Count > 0)
+            {
+                var scatterStable = plotResult.Plot.Add.Scatter(xsStable.ToArray(), ysStable.ToArray());
+                scatterStable.Color = ScottPlot.Colors.Black;
+                scatterStable.MarkerSize = 5;
+                scatterStable.LineWidth = 0;
+                scatterStable.LegendText = $"Position stable (écart < {seuilEcartMm} mm)";
+            }
+
             // ========== AXES & LÉGENDE ==========
             plotResult.Plot.Axes.Bottom.Label.Text = "X (mm)";
             plotResult.Plot.Axes.Bottom.Label.Bold = true;
@@ -111,7 +132,7 @@ namespace WinFormsApp1.Forms
             plotResult.Plot.Axes.AutoScale();
             plotResult.Refresh();
 
-            lblInfo.Text = $"Scans enregistrés : {allScans.Count}  |  Points totaux : {allPoints.Count}  |  Angles couverts : {groupedByAngle.Count}";
+            lblInfo.Text = $"Scans enregistrés : {allScans.Count}  |  Points totaux : {allPoints.Count}  |  Angles couverts : {groupedByAngle.Count}  |  Points stables : {xsStable.Count}";
         }
     }
 }
