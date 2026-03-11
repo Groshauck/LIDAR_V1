@@ -26,7 +26,7 @@ namespace WinFormsApp1.Forms
 
         private void InitializeUI()
         {
-            this.Text = $"Résultats Test {testDurationSeconds}s — Distance min par angle";
+            this.Text = $"Résultats Test {testDurationSeconds}s — Positions X/Y min & max distance / angle";
             this.Size = new Size(1200, 700);
             this.StartPosition = FormStartPosition.CenterScreen;
 
@@ -58,77 +58,60 @@ namespace WinFormsApp1.Forms
 
             plotResult.Plot.Clear();
 
-            // ========== COURBE 1 : Distance min globale par angle ==========
             var allPoints = allScans.SelectMany(scan => scan).ToList();
 
+            // Regrouper tous les points par angle arrondi à AnglePrecision
             var groupedByAngle = allPoints
                 .GroupBy(p => Math.Round(p.Angle / AnglePrecision, MidpointRounding.AwayFromZero) * AnglePrecision)
                 .OrderBy(g => g.Key)
                 .ToList();
 
-            var anglesGlobal = groupedByAngle.Select(g => g.Key).ToArray();
-            var distMinGlobal = groupedByAngle.Select(g => g.Min(p => p.Distance)).ToArray();
+            // Pour chaque angle : point à distance min et point à distance max
+            var xsMin = new List<double>();
+            var ysMin = new List<double>();
+            var xsMax = new List<double>();
+            var ysMax = new List<double>();
 
-            var scatter1 = plotResult.Plot.Add.Scatter(anglesGlobal, distMinGlobal);
-            scatter1.Color = ScottPlot.Colors.Red;
-            scatter1.MarkerSize = 3;
-            scatter1.LineWidth = 1.5f;
-            scatter1.LegendText = "Distance min globale";
-
-            // ========== COURBE 2 : Moyenne des distances min par scan, par angle ==========
-            var angleSet = new SortedSet<double>(anglesGlobal);
-            var distMinParScanParAngle = new Dictionary<double, List<double>>();
-
-            foreach (var angle in angleSet)
-                distMinParScanParAngle[angle] = new List<double>();
-
-            foreach (var scan in allScans)
+            foreach (var group in groupedByAngle)
             {
-                var scanGrouped = scan
-                    .GroupBy(p => Math.Round(p.Angle / AnglePrecision, MidpointRounding.AwayFromZero) * AnglePrecision)
-                    .ToDictionary(g => g.Key, g => g.Min(p => p.Distance));
+                var ptMin = group.OrderBy(p => p.Distance).First();
+                var ptMax = group.OrderByDescending(p => p.Distance).First();
 
-                foreach (var angle in angleSet)
-                {
-                    if (scanGrouped.ContainsKey(angle))
-                        distMinParScanParAngle[angle].Add(scanGrouped[angle]);
-                }
+                xsMin.Add(ptMin.X);
+                ysMin.Add(ptMin.Y);
+                xsMax.Add(ptMax.X);
+                ysMax.Add(ptMax.Y);
             }
 
-            var anglesMoy = distMinParScanParAngle.Keys.OrderBy(a => a).ToArray();
-            var distMoy = anglesMoy
-                .Select(a => distMinParScanParAngle[a].Count > 0 ? distMinParScanParAngle[a].Average() : double.NaN)
-                .ToArray();
+            // ========== COURBE VERTE : Distance minimale par angle ==========
+            var scatterMin = plotResult.Plot.Add.Scatter(xsMin.ToArray(), ysMin.ToArray());
+            scatterMin.Color = ScottPlot.Colors.Green;
+            scatterMin.MarkerSize = 4;
+            scatterMin.LineWidth = 0;
+            scatterMin.LegendText = "Position à dist. min / angle";
 
-            var validIndices = anglesMoy
-                .Select((a, i) => i)
-                .Where(i => !double.IsNaN(distMoy[i]))
-                .ToArray();
-
-            var anglesFiltered = validIndices.Select(i => anglesMoy[i]).ToArray();
-            var distMoyFiltered = validIndices.Select(i => distMoy[i]).ToArray();
-
-            var scatter2 = plotResult.Plot.Add.Scatter(anglesFiltered, distMoyFiltered);
-            scatter2.Color = ScottPlot.Colors.Blue;
-            scatter2.MarkerSize = 3;
-            scatter2.LineWidth = 1.5f;
-            scatter2.LegendText = "Moyenne dist. min / scan";
+            // ========== COURBE ROUGE : Distance maximale par angle ==========
+            var scatterMax = plotResult.Plot.Add.Scatter(xsMax.ToArray(), ysMax.ToArray());
+            scatterMax.Color = ScottPlot.Colors.Red;
+            scatterMax.MarkerSize = 4;
+            scatterMax.LineWidth = 0;
+            scatterMax.LegendText = "Position à dist. max / angle";
 
             // ========== AXES & LÉGENDE ==========
-            plotResult.Plot.Axes.Bottom.Label.Text = "Angle (°)";
+            plotResult.Plot.Axes.Bottom.Label.Text = "X (mm)";
             plotResult.Plot.Axes.Bottom.Label.Bold = true;
-            plotResult.Plot.Axes.Left.Label.Text = "Distance (mm)";
+            plotResult.Plot.Axes.Left.Label.Text = "Y (mm)";
             plotResult.Plot.Axes.Left.Label.Bold = true;
 
             plotResult.Plot.ShowLegend();
-            plotResult.Plot.Title($"Test {testDurationSeconds}s — {allScans.Count} scans enregistrés");
+            plotResult.Plot.Title($"Test {testDurationSeconds}s — Positions X/Y min & max distance / angle");
 
             plotResult.Plot.Grid.MajorLineColor = ScottPlot.Colors.Gray.WithAlpha(0.3);
 
             plotResult.Plot.Axes.AutoScale();
             plotResult.Refresh();
 
-            lblInfo.Text = $"Scans enregistrés : {allScans.Count}  |  Points totaux : {allPoints.Count}  |  Angles couverts : {anglesGlobal.Length}";
+            lblInfo.Text = $"Scans enregistrés : {allScans.Count}  |  Points totaux : {allPoints.Count}  |  Angles couverts : {groupedByAngle.Count}";
         }
     }
 }
