@@ -148,6 +148,7 @@ namespace WinFormsApp1.Forms
         private System.Windows.Forms.Label lblTestCountdown;
         private System.Windows.Forms.Label lblTestNormal;
         private System.Windows.Forms.Label lblTestDeboite;
+        private NumericUpDown numericSeuilEcart;
 
         public ConfigurationForm()
         {
@@ -310,6 +311,30 @@ namespace WinFormsApp1.Forms
                 TextAlign = ContentAlignment.MiddleLeft
             };
             panelTop.Controls.Add(lblTestDeboite);
+
+            var lblSeuil = new System.Windows.Forms.Label
+            {
+                Text = "Seuil écart (mm):",
+                Location = new Point(1230, 10),
+                Size = new Size(120, 20),
+                Font = new Font("Segoe UI", 8),
+                ForeColor = System.Drawing.Color.White,
+                BackColor = System.Drawing.Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            panelTop.Controls.Add(lblSeuil);
+
+            numericSeuilEcart = new NumericUpDown
+            {
+                Location = new Point(1230, 30),
+                Size = new Size(100, 25),
+                Minimum = 0,
+                Maximum = 10000,
+                Value = 100,
+                DecimalPlaces = 0,
+                Font = new Font("Segoe UI", 9)
+            };
+            panelTop.Controls.Add(numericSeuilEcart);
 
             this.Controls.Add(panelTop);
 
@@ -1421,7 +1446,7 @@ namespace WinFormsApp1.Forms
             if (restantes <= 0)
             {
                 StopTest();
-                var resultForm = new TestResultForm(allScansTest, testDureeTotaleSecondes);
+                var resultForm = new TestResultForm(allScansTest, testDureeTotaleSecondes, (double)numericSeuilEcart.Value);
                 resultForm.Show();
             }
         }
