@@ -215,12 +215,7 @@ namespace WinFormsApp1.Controls
         {
             isActive = false;
         }
-        public bool HasNewScan { get; set; } = false;
-
-        public void RefreshLidarView()
-        {
-            PlotData();
-        }
+        
         private void PlotData()
         {
             if (points.Count == 0) return;
