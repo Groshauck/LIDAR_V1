@@ -10,8 +10,6 @@ namespace WinFormsApp1.Forms
 {
     public class TestResultForm : Form
     {
-        private const double AnglePrecision = 0.5;
-
         private ScottPlot.WinForms.FormsPlot plotResult;
         private System.Windows.Forms.Label lblInfo;
         private readonly List<List<LidarPoint>> allScans;
@@ -33,7 +31,7 @@ namespace WinFormsApp1.Forms
 
         private void InitializeUI()
         {
-            this.Text = $"Résultats Test {testDurationSeconds}s — Positions X/Y min & max distance / angle";
+            this.Text = $"Résultats Test {testDurationSeconds}s — Positions X/Y min & max distance";
             this.Size = new Size(1200, 700);
             this.StartPosition = FormStartPosition.CenterScreen;
 
@@ -42,7 +40,7 @@ namespace WinFormsApp1.Forms
                 Dock = DockStyle.Top,
                 Height = 30,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font("Segoe UI", 10),
+                Font = new System.Drawing.Font("Segoe UI", 10),
                 ForeColor = System.Drawing.Color.DimGray,
                 Padding = new Padding(10, 0, 0, 0)
             };
@@ -84,25 +82,25 @@ namespace WinFormsApp1.Forms
 
             plotResult.Plot.Clear();
 
+            pointsMin.Clear();
+            pointsMax.Clear();
+            pointsStable.Clear();
+
+            // Tous les points de tous les scans confondus
             var allPoints = allScans.SelectMany(scan => scan).ToList();
 
-            // Regrouper tous les points par angle arrondi à AnglePrecision
+            // Grouper par angle EXACT — on prend le min et max parmi tous les scans
             var groupedByAngle = allPoints
-                .GroupBy(p => Math.Round(p.Angle / AnglePrecision, MidpointRounding.AwayFromZero) * AnglePrecision)
+                .GroupBy(p => p.Angle)
                 .OrderBy(g => g.Key)
                 .ToList();
 
-            // Pour chaque angle : point à distance min et point à distance max
             var xsMin = new List<double>();
             var ysMin = new List<double>();
             var xsMax = new List<double>();
             var ysMax = new List<double>();
             var xsStable = new List<double>();
             var ysStable = new List<double>();
-
-            pointsMin.Clear();
-            pointsMax.Clear();
-            pointsStable.Clear();
 
             foreach (var group in groupedByAngle)
             {
@@ -127,29 +125,29 @@ namespace WinFormsApp1.Forms
                     {
                         Angle = group.Key,
                         Distance = (ptMin.Distance + ptMax.Distance) / 2.0,
-                        X = (ptMin.X + ptMax.X) / 2.0,
-                        Y = (ptMin.Y + ptMax.Y) / 2.0,
+                        X = (ptMax.X),
+                        Y = ( ptMax.Y),
                         SignalStrength = (ptMin.SignalStrength + ptMax.SignalStrength) / 2.0,
                         Timestamp = 0
                     });
                 }
             }
 
-            // ========== COURBE VERTE : Distance minimale par angle ==========
+            // ========== COURBE VERTE : Distance minimale ==========
             var scatterMin = plotResult.Plot.Add.Scatter(xsMin.ToArray(), ysMin.ToArray());
             scatterMin.Color = ScottPlot.Colors.Green;
             scatterMin.MarkerSize = 4;
             scatterMin.LineWidth = 1;
-            scatterMin.LegendText = "Position à dist. min / angle";
+            scatterMin.LegendText = $"Dist. min ({pointsMin.Count} pts)";
 
-            // ========== COURBE ROUGE : Distance maximale par angle ==========
+            // ========== COURBE ROUGE : Distance maximale ==========
             var scatterMax = plotResult.Plot.Add.Scatter(xsMax.ToArray(), ysMax.ToArray());
             scatterMax.Color = ScottPlot.Colors.Red;
             scatterMax.MarkerSize = 4;
             scatterMax.LineWidth = 1;
             scatterMax.LegendText = "Position à dist. max / angle";
 
-            // ========== COURBE NOIRE : Positions stables (écart < seuil) ==========
+            // ========== COURBE NOIRE : Positions stables ==========
             if (xsStable.Count > 0)
             {
                 var scatterStable = plotResult.Plot.Add.Scatter(xsStable.ToArray(), ysStable.ToArray());
@@ -159,21 +157,19 @@ namespace WinFormsApp1.Forms
                 scatterStable.LegendText = $"Position stable (écart < {seuilEcartMm} mm)";
             }
 
-            // ========== AXES & LÉGENDE ==========
+            // ========== AXES & LEGENDE ==========
             plotResult.Plot.Axes.Bottom.Label.Text = "X (mm)";
             plotResult.Plot.Axes.Bottom.Label.Bold = true;
             plotResult.Plot.Axes.Left.Label.Text = "Y (mm)";
             plotResult.Plot.Axes.Left.Label.Bold = true;
 
             plotResult.Plot.ShowLegend();
-            plotResult.Plot.Title($"Test {testDurationSeconds}s — Positions X/Y min & max distance / angle");
-
+            plotResult.Plot.Title($"Test {testDurationSeconds}s — {allScans.Count} scans");
             plotResult.Plot.Grid.MajorLineColor = ScottPlot.Colors.Gray.WithAlpha(0.3);
-
             plotResult.Plot.Axes.AutoScale();
             plotResult.Refresh();
 
-            lblInfo.Text = $"Scans enregistrés : {allScans.Count}  |  Points totaux : {allPoints.Count}  |  Angles couverts : {groupedByAngle.Count}  |  Points stables : {xsStable.Count}";
+            lblInfo.Text = $"Scans : {allScans.Count}  |  Points totaux : {allPoints.Count}  |  Angles distincts : {groupedByAngle.Count}  |  Min : {pointsMin.Count}  |  Max : {pointsMax.Count}  |  Stables : {pointsStable.Count}";
         }
 
         private void BtnExport_Click(object sender, EventArgs e)
