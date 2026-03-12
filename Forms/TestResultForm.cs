@@ -1,6 +1,7 @@
 using ScottPlot;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using WinFormsApp1.Models;
@@ -16,6 +17,10 @@ namespace WinFormsApp1.Forms
         private readonly List<List<LidarPoint>> allScans;
         private readonly int testDurationSeconds;
         private readonly double seuilEcartMm;
+
+        private List<LidarPoint> pointsMin = new List<LidarPoint>();
+        private List<LidarPoint> pointsMax = new List<LidarPoint>();
+        private List<LidarPoint> pointsStable = new List<LidarPoint>();
 
         public TestResultForm(List<List<LidarPoint>> allScans, int testDurationSeconds = 30, double seuilEcartMm = 100.0)
         {
@@ -48,6 +53,25 @@ namespace WinFormsApp1.Forms
                 Dock = DockStyle.Fill
             };
             this.Controls.Add(plotResult);
+
+            var panelBottom = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 50
+            };
+
+            var btnExport = new Button
+            {
+                Text = "💾 Exporter les courbes",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                BackColor = System.Drawing.Color.FromArgb(0, 120, 215),
+                ForeColor = System.Drawing.Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            btnExport.Click += BtnExport_Click;
+            panelBottom.Controls.Add(btnExport);
+            this.Controls.Add(panelBottom);
         }
 
         private void PlotResults()
@@ -76,6 +100,10 @@ namespace WinFormsApp1.Forms
             var xsStable = new List<double>();
             var ysStable = new List<double>();
 
+            pointsMin.Clear();
+            pointsMax.Clear();
+            pointsStable.Clear();
+
             foreach (var group in groupedByAngle)
             {
                 var ptMin = group.OrderBy(p => p.Distance).First();
@@ -86,11 +114,24 @@ namespace WinFormsApp1.Forms
                 xsMax.Add(ptMax.X);
                 ysMax.Add(ptMax.Y);
 
+                pointsMin.Add(ptMin);
+                pointsMax.Add(ptMax);
+
                 double ecart = ptMax.Distance - ptMin.Distance;
                 if (ecart < seuilEcartMm)
                 {
                     xsStable.Add((ptMin.X + ptMax.X) / 2.0);
                     ysStable.Add((ptMin.Y + ptMax.Y) / 2.0);
+
+                    pointsStable.Add(new LidarPoint
+                    {
+                        Angle = group.Key,
+                        Distance = (ptMin.Distance + ptMax.Distance) / 2.0,
+                        X = (ptMin.X + ptMax.X) / 2.0,
+                        Y = (ptMin.Y + ptMax.Y) / 2.0,
+                        SignalStrength = (ptMin.SignalStrength + ptMax.SignalStrength) / 2.0,
+                        Timestamp = 0
+                    });
                 }
             }
 
@@ -133,6 +174,61 @@ namespace WinFormsApp1.Forms
             plotResult.Refresh();
 
             lblInfo.Text = $"Scans enregistrés : {allScans.Count}  |  Points totaux : {allPoints.Count}  |  Angles couverts : {groupedByAngle.Count}  |  Points stables : {xsStable.Count}";
+        }
+
+        private void BtnExport_Click(object sender, EventArgs e)
+        {
+            using (var fbd = new FolderBrowserDialog())
+            {
+                fbd.Description = "Sélectionnez le dossier racine d'export";
+                if (fbd.ShowDialog() != DialogResult.OK) return;
+
+                string racine = fbd.SelectedPath;
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+                string dossierMin    = Path.Combine(racine, "minimum");
+                string dossierMax    = Path.Combine(racine, "maximum");
+                string dossierStable = Path.Combine(racine, "stable");
+
+                if (!Directory.Exists(dossierMin))    Directory.CreateDirectory(dossierMin);
+                if (!Directory.Exists(dossierMax))    Directory.CreateDirectory(dossierMax);
+                if (!Directory.Exists(dossierStable)) Directory.CreateDirectory(dossierStable);
+
+                try
+                {
+                    string fileMin    = Path.Combine(dossierMin,    $"test_minimum_{timestamp}.csv");
+                    string fileMax    = Path.Combine(dossierMax,    $"test_maximum_{timestamp}.csv");
+                    string fileStable = Path.Combine(dossierStable, $"test_stable_{timestamp}.csv");
+
+                    ExportCsv(fileMin,    pointsMin);
+                    ExportCsv(fileMax,    pointsMax);
+                    ExportCsv(fileStable, pointsStable);
+
+                    MessageBox.Show(
+                        $"✓ Export réussi !\n\n" +
+                        $"minimum/  → {pointsMin.Count} points\n" +
+                        $"maximum/  → {pointsMax.Count} points\n" +
+                        $"stable/   → {pointsStable.Count} points\n\n" +
+                        $"Dossier : {racine}",
+                        "Export terminé",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Erreur lors de l'export : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void ExportCsv(string filePath, List<LidarPoint> points)
+        {
+            using (var sw = new StreamWriter(filePath))
+            {
+                sw.WriteLine("Angle;Distance;X;Y;SignalStrength;Timestamp");
+                foreach (var p in points)
+                    sw.WriteLine($"{p.Angle};{p.Distance};{p.X};{p.Y};{p.SignalStrength};{p.Timestamp}");
+            }
         }
     }
 }
