@@ -98,14 +98,14 @@ namespace WinFormsApp1.Forms
             var scatterMin = plotResult.Plot.Add.Scatter(xsMin.ToArray(), ysMin.ToArray());
             scatterMin.Color = ScottPlot.Colors.Green;
             scatterMin.MarkerSize = 4;
-            scatterMin.LineWidth = 0;
+            scatterMin.LineWidth = 1;
             scatterMin.LegendText = "Position à dist. min / angle";
 
             // ========== COURBE ROUGE : Distance maximale par angle ==========
             var scatterMax = plotResult.Plot.Add.Scatter(xsMax.ToArray(), ysMax.ToArray());
             scatterMax.Color = ScottPlot.Colors.Red;
             scatterMax.MarkerSize = 4;
-            scatterMax.LineWidth = 0;
+            scatterMax.LineWidth = 1;
             scatterMax.LegendText = "Position à dist. max / angle";
 
             // ========== COURBE NOIRE : Positions stables (écart < seuil) ==========
@@ -114,7 +114,7 @@ namespace WinFormsApp1.Forms
                 var scatterStable = plotResult.Plot.Add.Scatter(xsStable.ToArray(), ysStable.ToArray());
                 scatterStable.Color = ScottPlot.Colors.Black;
                 scatterStable.MarkerSize = 5;
-                scatterStable.LineWidth = 0;
+                scatterStable.LineWidth = 1;
                 scatterStable.LegendText = $"Position stable (écart < {seuilEcartMm} mm)";
             }
 
