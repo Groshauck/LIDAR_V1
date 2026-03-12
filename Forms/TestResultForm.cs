@@ -89,7 +89,7 @@ namespace WinFormsApp1.Forms
             // Tous les points de tous les scans confondus
             var allPoints = allScans.SelectMany(scan => scan).ToList();
 
-            // Grouper par angle EXACT (pas d'arrondi) — on prend le min et max parmi tous les scans
+            // Grouper par angle EXACT — on prend le min et max parmi tous les scans
             var groupedByAngle = allPoints
                 .GroupBy(p => p.Angle)
                 .OrderBy(g => g.Key)
