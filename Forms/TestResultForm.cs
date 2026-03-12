@@ -64,7 +64,7 @@ namespace WinFormsApp1.Forms
             {
                 Text = "💾 Exporter les courbes",
                 Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold),
                 BackColor = System.Drawing.Color.FromArgb(0, 120, 215),
                 ForeColor = System.Drawing.Color.White,
                 FlatStyle = FlatStyle.Flat
