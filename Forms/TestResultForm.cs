@@ -118,16 +118,16 @@ namespace WinFormsApp1.Forms
                 double ecart = ptMax.Distance - ptMin.Distance;
                 if (ecart < seuilEcartMm)
                 {
-                    xsStable.Add((ptMin.X + ptMax.X) / 2.0);
-                    ysStable.Add((ptMin.Y + ptMax.Y) / 2.0);
+                    xsStable.Add((ptMax.X));
+                    ysStable.Add((ptMax.Y));
 
                     pointsStable.Add(new LidarPoint
                     {
                         Angle = group.Key,
-                        Distance = (ptMin.Distance + ptMax.Distance) / 2.0,
+                        Distance = (ptMax.Distance) ,
                         X = (ptMax.X),
                         Y = ( ptMax.Y),
-                        SignalStrength = (ptMin.SignalStrength + ptMax.SignalStrength) / 2.0,
+                        SignalStrength = (ptMax.SignalStrength),
                         Timestamp = 0
                     });
                 }
