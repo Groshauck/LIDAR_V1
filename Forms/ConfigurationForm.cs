@@ -151,7 +151,20 @@ namespace WinFormsApp1.Forms
         private System.Windows.Forms.Label lblTestDeboite;
         private NumericUpDown numericSeuilEcart;
 
+<<<<<<< HEAD
 public ConfigurationForm()
+=======
+        // ========== MODBUS ==========
+        private ModbusConfigManager _modbusConfigManager = new ModbusConfigManager();
+        private ModbusConfig _modbusConfig = new ModbusConfig();
+        private ModbusService _modbusService = null!;
+        private Panel _panelVoyantModbus = null!;
+        private System.Windows.Forms.Label _lblVoyantModbusTexte = null!;
+        private System.Windows.Forms.Timer _timerVoyantModbus = null!;
+        private bool _cachePresent = false;
+
+        public ConfigurationForm()
+>>>>>>> 5f8df766ffa572cdfda054dd89294d6990891201
         {
             InitializeComponent();
 
@@ -161,6 +174,14 @@ public ConfigurationForm()
 
             InitializeUI();
             LoadLidarConfig(1);
+
+            // Initialisation Modbus
+            _modbusConfig = _modbusConfigManager.Load();
+            _modbusService = new ModbusService(_modbusConfig);
+            _modbusService.OnDemarrerTest += ModbusDemarrerTest;
+            _modbusService.OnCachePresent += ModbusCachePresent;
+            _modbusService.Start();
+            StartVoyantTimer();
 
             //refreshLidarTimer = new System.Windows.Forms.Timer();
             //refreshLidarTimer.Interval = 10000; // 1000 ms = 1 seconde
@@ -336,6 +357,56 @@ public ConfigurationForm()
                 Font = new Font("Segoe UI", 9)
             };
             panelTop.Controls.Add(numericSeuilEcart);
+
+            // Bouton Modbus config
+            var btnModbus = new Button
+            {
+                Text = "🔌 Modbus",
+                Location = new Point(1345, 18),
+                Size = new Size(130, 35),
+                Font = new Font("Segoe UI", 10, System.Drawing.FontStyle.Bold),
+                BackColor = System.Drawing.Color.FromArgb(80, 40, 120),
+                ForeColor = System.Drawing.Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            btnModbus.FlatAppearance.BorderSize = 0;
+            btnModbus.Click += (s, e) =>
+            {
+                using var f = new ModbusConfigForm(_modbusService, _modbusConfigManager, _modbusConfig);
+                f.ShowDialog(this);
+                // Recharger la config et redémarrer le service si changement
+                _modbusConfig = _modbusConfigManager.Load();
+                _modbusService.Stop();
+                _modbusService.Dispose();
+                _modbusService = new ModbusService(_modbusConfig);
+                _modbusService.OnDemarrerTest += ModbusDemarrerTest;
+                _modbusService.OnCachePresent += ModbusCachePresent;
+                _modbusService.Start();
+            };
+            panelTop.Controls.Add(btnModbus);
+
+            // Voyant visuel Modbus dans panelTop
+            _panelVoyantModbus = new Panel
+            {
+                Location = new Point(1490, 15),
+                Size = new Size(40, 40),
+                BackColor = System.Drawing.Color.DimGray
+            };
+            var gpModbus = new System.Drawing.Drawing2D.GraphicsPath();
+            gpModbus.AddEllipse(0, 0, 40, 40);
+            _panelVoyantModbus.Region = new Region(gpModbus);
+            panelTop.Controls.Add(_panelVoyantModbus);
+
+            _lblVoyantModbusTexte = new System.Windows.Forms.Label
+            {
+                Text = "—",
+                Location = new Point(1538, 25),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9, System.Drawing.FontStyle.Bold),
+                ForeColor = System.Drawing.Color.Gray,
+                BackColor = System.Drawing.Color.Transparent
+            };
+            panelTop.Controls.Add(_lblVoyantModbusTexte);
 
             this.Controls.Add(panelTop);
 
@@ -1249,6 +1320,13 @@ public ConfigurationForm()
                         testDeboiteCount++;
                         lblTestDeboite.Text = $"❌ {testDeboiteCount}";
                     }
+                    // Écriture sorties Modbus — test en cours
+                    _modbusService?.SetResultat(normal: false, deboite: false, enCours: true);
+                }
+                else
+                {
+                    // Écriture sorties Modbus — résultat final
+                    _modbusService?.SetResultat(normal: toutOK, deboite: !toutOK, enCours: false);
                 }
             }
 
@@ -1408,6 +1486,13 @@ public ConfigurationForm()
             if (testEnCours)
             {
                 StopTest();
+                return;
+            }
+
+            if (_cachePresent)
+            {
+                MessageBox.Show("⚠️ Cache LIDAR présent — retirer le cache avant de démarrer le test.",
+                    "Cache présent", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -2102,6 +2187,70 @@ public ConfigurationForm()
                 highlightedPoint = null;
                 PlotPreview();  // Redessiner sans surbrillance
             }
+        }
+
+        // ========== MODBUS ==========
+
+        private void StartVoyantTimer()
+        {
+            _timerVoyantModbus = new System.Windows.Forms.Timer { Interval = 200 };
+            _timerVoyantModbus.Tick += (s, e) => UpdateVoyantModbus();
+            _timerVoyantModbus.Start();
+        }
+
+        private void UpdateVoyantModbus()
+        {
+            if (_panelVoyantModbus == null || _modbusService == null) return;
+            if (_modbusService.SortieNormal)
+            {
+                _panelVoyantModbus.BackColor = System.Drawing.Color.LimeGreen;
+                if (_lblVoyantModbusTexte != null)
+                {
+                    _lblVoyantModbusTexte.Text = "NORMAL";
+                    _lblVoyantModbusTexte.ForeColor = System.Drawing.Color.LimeGreen;
+                }
+            }
+            else if (_modbusService.SortieDeboite)
+            {
+                _panelVoyantModbus.BackColor = System.Drawing.Color.Red;
+                if (_lblVoyantModbusTexte != null)
+                {
+                    _lblVoyantModbusTexte.Text = "DÉBOÎTÉ";
+                    _lblVoyantModbusTexte.ForeColor = System.Drawing.Color.OrangeRed;
+                }
+            }
+            else
+            {
+                _panelVoyantModbus.BackColor = System.Drawing.Color.DimGray;
+                if (_lblVoyantModbusTexte != null)
+                {
+                    _lblVoyantModbusTexte.Text = "—";
+                    _lblVoyantModbusTexte.ForeColor = System.Drawing.Color.Gray;
+                }
+            }
+        }
+
+        private void ModbusDemarrerTest()
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke((Action)(() => BtnTest30s_Click(this, EventArgs.Empty)));
+                return;
+            }
+            BtnTest30s_Click(this, EventArgs.Empty);
+        }
+
+        private void ModbusCachePresent(bool present)
+        {
+            _cachePresent = present;
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            _timerVoyantModbus?.Stop();
+            _modbusService?.Stop();
+            _modbusService?.Dispose();
+            base.OnFormClosed(e);
         }
     }
 }
