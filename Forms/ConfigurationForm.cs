@@ -2,18 +2,19 @@
 using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Reflection.Emit;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinFormsApp1.Forms;
 using WinFormsApp1.Models;
 using WinFormsApp1.Properties;
 using WinFormsApp1.Services;
-using System.Threading.Tasks;
 using WinFormsLabel = System.Windows.Forms.Label;
-using System.Diagnostics;
 
 
 namespace WinFormsApp1.Forms
@@ -150,7 +151,7 @@ namespace WinFormsApp1.Forms
         private System.Windows.Forms.Label lblTestDeboite;
         private NumericUpDown numericSeuilEcart;
 
-        public ConfigurationForm()
+public ConfigurationForm()
         {
             InitializeComponent();
 
