@@ -151,20 +151,7 @@ namespace WinFormsApp1.Forms
         private System.Windows.Forms.Label lblTestDeboite;
         private NumericUpDown numericSeuilEcart;
 
-<<<<<<< HEAD
-public ConfigurationForm()
-=======
-        // ========== MODBUS ==========
-        private ModbusConfigManager _modbusConfigManager = new ModbusConfigManager();
-        private ModbusConfig _modbusConfig = new ModbusConfig();
-        private ModbusService _modbusService = null!;
-        private Panel _panelVoyantModbus = null!;
-        private System.Windows.Forms.Label _lblVoyantModbusTexte = null!;
-        private System.Windows.Forms.Timer _timerVoyantModbus = null!;
-        private bool _cachePresent = false;
-
         public ConfigurationForm()
->>>>>>> 5f8df766ffa572cdfda054dd89294d6990891201
         {
             InitializeComponent();
 
